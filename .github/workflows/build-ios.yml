@@ -19,9 +19,6 @@ jobs:
       with:
         xcode-version: '26.1'
 
-    - name: Show iOS SDK version
-      run: xcodebuild -showsdks | grep iPhoneOS
-
     - name: Build core using individual core method
       run: |
         # Build using individual core Makefile.libretro method
