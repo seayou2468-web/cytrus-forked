@@ -381,11 +381,11 @@ private:
     std::shared_ptr<ServerSession> session;
     std::shared_ptr<Thread> thread;
     // TODO(yuriks): Check common usage of this and optimize size accordingly
-    // boost::container::small_vector<std::shared_ptr<Object>, 8> request_handles;
+    // removed boost::container::small_vector<std::shared_ptr<Object>, 8> request_handles;
     // The static buffers will be created when the IPC request is translated.
     std::array<std::vector<u8>, IPC::MAX_STATIC_BUFFERS> static_buffers;
     // The mapped buffers will be created when the IPC request is translated
-    // boost::container::small_vector<MappedBuffer, 8> request_mapped_buffers;
+    // removed boost::container::small_vector<MappedBuffer, 8> request_mapped_buffers;
 
     HLERequestContext();
     template <class Archive>

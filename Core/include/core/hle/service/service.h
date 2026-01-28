@@ -101,7 +101,7 @@ private:
 
     /// Function used to safely up-cast pointers to the derived class before invoking a handler.
     InvokerFn* handler_invoker;
-    // boost::container::flat_map<u32, FunctionInfoBase> handlers;
+    // removed boost::container::flat_map<u32, FunctionInfoBase> handlers;
 };
 
 /**
@@ -222,13 +222,13 @@ extern const std::array<ServiceModuleInfo, 41> service_module_map;
     // Serialization removed for libretro core
 
 #define SERVICE_CONSTRUCT(T)                                                                       \
-    namespace // boost::serialization {                                                               \
+    namespace // removed boost::serialization {                                                               \
     template <class Archive>                                                                       \
     void load_construct_data(Archive& ar, T* t, const unsigned int);                               \
     }
 
 #define SERVICE_CONSTRUCT_IMPL(T)                                                                  \
-    namespace // boost::serialization {                                                               \
+    namespace // removed boost::serialization {                                                               \
     template <class Archive>                                                                       \
     void load_construct_data(Archive& ar, T* t, const unsigned int) {                              \
         ::new (t) T(Core::Global<Core::System>());                                                 \

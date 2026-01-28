@@ -152,7 +152,7 @@ public:
     unsigned int handle_table_size = 0x200;
     /// Special memory ranges mapped into this processes address space. This is used to give
     /// processes access to specific I/O regions and device memory.
-    // boost::container::static_vector<AddressMapping, 8> address_mappings;
+    // removed boost::container::static_vector<AddressMapping, 8> address_mappings;
     ProcessFlags flags;
     bool no_thread_restrictions = false;
     /// Kernel compatibility version for this process

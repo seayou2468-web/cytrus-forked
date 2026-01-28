@@ -98,7 +98,7 @@ static_assert(std::is_trivially_copyable_v<PadData>,
  */
 template <typename T>
 Message<T> Create(const T data, const u32 client_id = 0) {
-    // boost::crc_32_type crc;
+    // removed boost::crc_32_type crc;
     Header header{
         CLIENT_MAGIC, PROTOCOL_VERSION, sizeof(T) + sizeof(Type), 0, client_id, GetMessageType<T>(),
     };
@@ -221,7 +221,7 @@ static_assert(sizeof(PadData::Gyroscope) == 12, "UDP Response Gyroscope struct h
 /**
  * Create a Response Message from the data
  * @param data array of bytes sent from the server
- * @return // boost::none if it failed to parse or Type if it succeeded. The client can then safely
+ * @return // removed boost::none if it failed to parse or Type if it succeeded. The client can then safely
  * copy the data into the appropriate struct for that Type
  */
 std::optional<Type> Validate(u8* data, std::size_t size);

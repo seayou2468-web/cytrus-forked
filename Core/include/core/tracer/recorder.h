@@ -67,7 +67,7 @@ private:
         std::vector<u8> extra_data;
 
         /// Optional CRC hash (e.g. for hashing memory regions)
-        // boost::crc_32_type::value_type hash;
+        // removed boost::crc_32_type::value_type hash;
 
         /// If true, refer to data already written to the output file instead of extra_data
         bool uses_existing_data;
@@ -79,7 +79,7 @@ private:
      * Internal cache which maps hashes of memory contents to file offsets at which those memory
      * contents are stored.
      */
-    std::unordered_map<// boost::crc_32_type::value_type /*hash*/, u32 /*file_offset*/> memory_regions;
+    std::unordered_map<// removed boost::crc_32_type::value_type /*hash*/, u32 /*file_offset*/> memory_regions;
 };
 
 } // namespace CiTrace

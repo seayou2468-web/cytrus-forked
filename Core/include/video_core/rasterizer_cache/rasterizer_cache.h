@@ -29,7 +29,7 @@ MICROPROFILE_DECLARE(RasterizerCache_DownloadSurface);
 MICROPROFILE_DECLARE(RasterizerCache_Invalidation);
 
 constexpr auto RangeFromInterval(const auto& map, const auto& interval) {
-    return // boost::make_iterator_range(map.equal_range(interval));
+    return // removed boost::make_iterator_range(map.equal_range(interval));
 }
 
 template <class T>
@@ -662,7 +662,7 @@ typename T::Surface& RasterizerCache<T>::GetTextureCube(const TextureCubeConfig&
             continue;
         }
         cube.ticks[i] = surface.modification_tick;
-        // boost::container::small_vector<TextureCopy, 8> upload_copies;
+        // removed boost::container::small_vector<TextureCopy, 8> upload_copies;
         for (u32 level = 0; level < config.levels; level++) {
             const u32 width_lod = surface.GetScaledWidth() >> level;
             upload_copies.push_back({
@@ -748,14 +748,14 @@ FramebufferHelper<T> RasterizerCache<T>::GetFramebufferSurfaces(bool using_color
     if (color_id) {
         color_level = color_surface->LevelOf(color_params.addr);
         color_surface->flags |= SurfaceFlagBits::RenderTarget;
-        ValidateSurface(color_id, // boost::icl::first(color_vp_interval),
-                        // boost::icl::length(color_vp_interval));
+        ValidateSurface(color_id, // removed boost::icl::first(color_vp_interval),
+                        // removed boost::icl::length(color_vp_interval));
     }
     if (depth_id) {
         depth_level = depth_surface->LevelOf(depth_params.addr);
         depth_surface->flags |= SurfaceFlagBits::RenderTarget;
-        ValidateSurface(depth_id, // boost::icl::first(depth_vp_interval),
-                        // boost::icl::length(depth_vp_interval));
+        ValidateSurface(depth_id, // removed boost::icl::first(depth_vp_interval),
+                        // removed boost::icl::length(depth_vp_interval));
     }
 
     const FramebufferParams fb_params = {
@@ -809,7 +809,7 @@ template <typename Func>
 void RasterizerCache<T>::ForEachSurfaceInRegion(PAddr addr, std::size_t size, Func&& func) {
     using FuncReturn = typename std::invoke_result<Func, SurfaceId, Surface&>::type;
     static constexpr bool BOOL_BREAK = std::is_same_v<FuncReturn, bool>;
-    // boost::container::small_vector<SurfaceId, 8> surfaces;
+    // removed boost::container::small_vector<SurfaceId, 8> surfaces;
     ForEachPage(addr, size, [this, &surfaces, addr, size, func](u64 page) {
         const auto it = page_table.find(page);
         if (it == page_table.end()) {
@@ -901,7 +901,7 @@ SurfaceId RasterizerCache<T>::FindMatch(const SurfaceParams& params, ScaleMatch 
                 return;
             }
 
-            if (// boost::icl::length(surface_interval) > // boost::icl::length(match_interval)) {
+            if (// removed boost::icl::length(surface_interval) > // removed boost::icl::length(match_interval)) {
                 UpdateMatch();
             }
         };
@@ -915,7 +915,7 @@ SurfaceId RasterizerCache<T>::FindMatch(const SurfaceParams& params, ScaleMatch 
             ASSERT(validate_interval);
             const SurfaceInterval copy_interval =
                 surface.GetCopyableInterval(params.FromInterval(*validate_interval));
-            const bool matched = // boost::icl::length(copy_interval & *validate_interval) != 0 &&
+            const bool matched = // removed boost::icl::length(copy_interval & *validate_interval) != 0 &&
                                  surface.CanCopy(params, copy_interval);
             return std::make_pair(matched, copy_interval);
         });
@@ -923,7 +923,7 @@ SurfaceId RasterizerCache<T>::FindMatch(const SurfaceParams& params, ScaleMatch 
             ASSERT(validate_interval);
             const SurfaceInterval copy_interval =
                 surface.GetCopyableInterval(params.FromInterval(*validate_interval));
-            const bool matched = // boost::icl::length(copy_interval & *validate_interval) != 0 &&
+            const bool matched = // removed boost::icl::length(copy_interval & *validate_interval) != 0 &&
                                  surface.CanReinterpret(params);
             return std::make_pair(matched, copy_interval);
         });
@@ -971,7 +971,7 @@ void RasterizerCache<T>::ValidateSurface(SurfaceId surface_id, PAddr addr, u32 s
         // to the current level interval. If the interval is empty
         // then we have validated the entire level so move to the next.
         const auto interval = *validate_regions.begin() & level_interval;
-        if (// boost::icl::is_empty(interval)) {
+        if (// removed boost::icl::is_empty(interval)) {
             level_interval = surface.LevelInterval(++level);
             continue;
         }
@@ -1112,8 +1112,8 @@ void RasterizerCache<T>::DownloadSurface(Surface& surface, SurfaceInterval inter
     MICROPROFILE_SCOPE(RasterizerCache_DownloadSurface);
 
     const SurfaceParams flush_info = surface.FromInterval(interval);
-    const u32 flush_start = // boost::icl::first(interval);
-    const u32 flush_end = // boost::icl::last_next(interval);
+    const u32 flush_start = // removed boost::icl::first(interval);
+    const u32 flush_end = // removed boost::icl::last_next(interval);
     ASSERT(flush_start >= surface.addr && flush_end <= surface.end);
 
     const auto staging = runtime.FindStaging(
@@ -1139,8 +1139,8 @@ void RasterizerCache<T>::DownloadSurface(Surface& surface, SurfaceInterval inter
 
 template <class T>
 void RasterizerCache<T>::DownloadFillSurface(Surface& surface, SurfaceInterval interval) {
-    const u32 flush_start = // boost::icl::first(interval);
-    const u32 flush_end = // boost::icl::last_next(interval);
+    const u32 flush_start = // removed boost::icl::first(interval);
+    const u32 flush_end = // removed boost::icl::last_next(interval);
     ASSERT(flush_start >= surface.addr && flush_end <= surface.end);
 
     MemoryRef dest_ptr = memory.GetPhysicalRef(flush_start);
@@ -1177,14 +1177,14 @@ bool RasterizerCache<T>::ValidateByReinterpretation(Surface& surface, SurfacePar
     if (reinterpret_id) {
         Surface& src_surface = slot_surfaces[reinterpret_id];
         const SurfaceInterval copy_interval = src_surface.GetCopyableInterval(params);
-        if (// boost::icl::is_empty(copy_interval & interval)) {
+        if (// removed boost::icl::is_empty(copy_interval & interval)) {
             return false;
         }
         const u32 res_scale = src_surface.res_scale;
         if (res_scale > surface.res_scale) {
             surface.ScaleUp(res_scale);
         }
-        const PAddr addr = // boost::icl::lower(interval);
+        const PAddr addr = // removed boost::icl::lower(interval);
         const SurfaceParams copy_params = surface.FromInterval(copy_interval);
         const auto src_rect = src_surface.GetScaledSubRect(copy_params);
         const auto dst_rect = surface.GetScaledSubRect(copy_params);
@@ -1222,8 +1222,8 @@ void RasterizerCache<T>::ClearAll(bool flush) {
     for (auto& pair : RangeFromInterval(cached_pages, flush_interval)) {
         const auto interval = pair.first & flush_interval;
 
-        const PAddr interval_start_addr = // boost::icl::first(interval) << Memory::CITRA_PAGE_BITS;
-        const PAddr interval_end_addr = // boost::icl::last_next(interval) << Memory::CITRA_PAGE_BITS;
+        const PAddr interval_start_addr = // removed boost::icl::first(interval) << Memory::CITRA_PAGE_BITS;
+        const PAddr interval_end_addr = // removed boost::icl::last_next(interval) << Memory::CITRA_PAGE_BITS;
         const u32 interval_size = interval_end_addr - interval_start_addr;
 
         memory.RasterizerMarkRegionCached(interval_start_addr, interval_size, false);
@@ -1271,7 +1271,7 @@ void RasterizerCache<T>::FlushRegion(PAddr addr, u32 size, SurfaceId flush_surfa
         const u32 end_level = surface.LevelOf(interval.upper());
         for (u32 level = start_level; level <= end_level; level++) {
             const auto download_interval = interval & surface.LevelInterval(level);
-            if (// boost::icl::is_empty(download_interval)) {
+            if (// removed boost::icl::is_empty(download_interval)) {
                 continue;
             }
             DownloadSurface(surface, download_interval);
@@ -1303,7 +1303,7 @@ void RasterizerCache<T>::InvalidateRegion(PAddr addr, u32 size, SurfaceId region
         region_owner.MarkValid(invalid_interval);
     }
 
-    // boost::container::small_vector<SurfaceId, 4> remove_surfaces;
+    // removed boost::container::small_vector<SurfaceId, 4> remove_surfaces;
     ForEachSurfaceInRegion(addr, size, [&](SurfaceId surface_id, Surface& surface) {
         if (surface_id == region_owner_id) {
             return;
@@ -1431,8 +1431,8 @@ void RasterizerCache<T>::UpdatePagesCachedCount(PAddr addr, u32 size, int delta)
         const auto interval = pair.first & pages_interval;
         const int count = pair.second;
 
-        const PAddr interval_start_addr = // boost::icl::first(interval) << Memory::CITRA_PAGE_BITS;
-        const PAddr interval_end_addr = // boost::icl::last_next(interval) << Memory::CITRA_PAGE_BITS;
+        const PAddr interval_start_addr = // removed boost::icl::first(interval) << Memory::CITRA_PAGE_BITS;
+        const PAddr interval_end_addr = // removed boost::icl::last_next(interval) << Memory::CITRA_PAGE_BITS;
         const u32 interval_size = interval_end_addr - interval_start_addr;
 
         if (delta > 0 && count == delta) {

@@ -4,22 +4,14 @@
 
 #pragma once
 
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
+// Serialization removed for libretro core
+// Using dummy types to prevent compilation errors
+struct DummyArchive {};
+using iarchive = DummyArchive;
+using oarchive = DummyArchive;
 
-using iarchive = // boost::archive::binary_iarchive;
-using oarchive = // boost::archive::binary_oarchive;
+#define SERIALIZE_IMPL(A) // Serialization removed
 
-#define SERIALIZE_IMPL(A)                                                                          \
-    template void A::serialize<iarchive>(iarchive & ar, const unsigned int file_version);          \
-    template void A::serialize<oarchive>(oarchive & ar, const unsigned int file_version);
+#define SERIALIZE_EXPORT_IMPL(A) // Serialization removed
 
-#define SERIALIZE_EXPORT_IMPL(A)                                                                   \
-    BOOST_CLASS_EXPORT_IMPLEMENT(A)                                                                \
-    BOOST_SERIALIZATION_REGISTER_ARCHIVE(iarchive)                                                 \
-    BOOST_SERIALIZATION_REGISTER_ARCHIVE(oarchive)
-
-#define DEBUG_SERIALIZATION_POINT                                                                  \
-    do {                                                                                           \
-        LOG_DEBUG(Savestate, "");                                                                  \
-    } while (0)
+#define DEBUG_SERIALIZATION_POINT // Debug serialization removed

@@ -19,9 +19,9 @@ struct MemoryRegionInfo {
     u32 size;
     u32 used;
 
-    // The domain of the interval_set are offsets from start of FCRAM
-    using IntervalSet = // boost::icl::interval_set<u32>;
-    using Interval = IntervalSet::interval_type;
+    // Simplified interval set for libretro core
+    using IntervalSet = std::set<u32>;
+    using Interval = std::pair<u32, u32>;
 
     IntervalSet free_blocks;
 
