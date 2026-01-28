@@ -1,0 +1,200 @@
+# Cytrus libretro core Makefile.libretro
+# Based on standard libretro core Makefile structure
+
+# Core name
+TARGET_NAME := cytrus
+
+# Static linking flag
+ifeq ($(STATIC_LINKING), 1)
+EXT := a
+endif
+
+# Platform detection and configuration
+ifeq ($(platform),)
+   platform = unix
+   ifeq ($(shell uname -a),)
+      platform = win
+   else ifneq ($(findstring MINGW,$(shell uname -a)),)
+      platform = win
+   else ifneq ($(findstring Darwin,$(shell uname -a)),)
+      platform = osx
+   endif
+endif
+
+# Unix/Linux
+ifeq ($(platform), unix)
+   TARGET := $(TARGET_NAME)_libretro.so
+   fpic := -fPIC
+   SHARED := -shared -Wl,--version-script=link.T -Wl,--no-undefined
+   CXXFLAGS += -D__linux__
+   LDFLAGS += -lGL -lpthread -ldl
+
+# macOS
+else ifeq ($(platform), osx)
+   TARGET := $(TARGET_NAME)_libretro.dylib
+   fpic := -fPIC
+   SHARED := -dynamiclib
+   CXXFLAGS += -D__APPLE__ -stdlib=libc++
+   LDFLAGS += -framework OpenGL -framework Foundation -framework AppKit
+
+# iOS (arm64)
+else ifeq ($(platform), ios-arm64)
+   TARGET := $(TARGET_NAME)_libretro_ios.dylib
+   fpic := -fPIC
+   SHARED := -dynamiclib
+   CXXFLAGS += -D__APPLE__ -D__IOS__ -stdlib=libc++
+   
+   # iOS SDK setup
+   ifeq ($(IOSSDK),)
+      IOSSDK := $(shell xcodebuild -version -sdk iphoneos Path)
+   endif
+   
+   # Compiler configuration for iOS arm64
+   CC = cc -arch arm64 -isysroot $(IOSSDK)
+   CXX = c++ -arch arm64 -isysroot $(IOSSDK)
+   CXXFLAGS += -miphoneos-version-min=13.0
+   CFLAGS += -miphoneos-version-min=13.0
+   LDFLAGS += -framework OpenGL -framework Foundation -framework UIKit
+   LDFLAGS += -miphoneos-version-min=13.0
+
+# iOS (armv7)
+else ifeq ($(platform), ios)
+   TARGET := $(TARGET_NAME)_libretro_ios.dylib
+   fpic := -fPIC
+   SHARED := -dynamiclib
+   CXXFLAGS += -D__APPLE__ -D__IOS__ -stdlib=libc++
+   
+   # iOS SDK setup
+   ifeq ($(IOSSDK),)
+      IOSSDK := $(shell xcodebuild -version -sdk iphoneos Path)
+   endif
+   
+   # Compiler configuration for iOS armv7
+   CC = cc -arch armv7 -isysroot $(IOSSDK)
+   CXX = c++ -arch armv7 -isysroot $(IOSSDK)
+   CXXFLAGS += -miphoneos-version-min=9.0
+   CFLAGS += -miphoneos-version-min=9.0
+   LDFLAGS += -framework OpenGL -framework Foundation -framework UIKit
+   LDFLAGS += -miphoneos-version-min=9.0
+
+# Windows
+else ifeq ($(platform), win)
+   TARGET := $(TARGET_NAME)_libretro.dll
+   fpic := -fPIC
+   SHARED := -shared -Wl,--version-script=link.T -Wl,--no-undefined
+   CXXFLAGS += -D__WIN32__ -static-libgcc -static-libstdc++
+   LDFLAGS += -lws2_32 -lwinmm -lgdi32 -lopengl32
+endif
+
+# Compiler flags (common)
+CXXFLAGS += -O2 -g -Wall -Wextra -fno-strict-aliasing -fno-exceptions -fvisibility=hidden $(fpic)
+CXXFLAGS += -std=c++17
+CFLAGS += -O2 -g -Wall -Wextra $(fpic)
+
+# Include directories
+INCLUDES := -I. \
+           -Ilibretro-common/include \
+           -ICore \
+           -ICore/audio_core \
+           -ICore/common \
+           -ICore/core \
+           -ICore/core/arm \
+           -ICore/core/hle \
+           -ICore/core/hle/service \
+           -ICore/frontend \
+           -ICore/input_common \
+           -ICore/network \
+           -ICore/video_core
+
+# Source files (libretro interface)
+LIBRETRO_SOURCES := \
+    cytrus_libretro_core.cpp \
+    cytrus_frontend.cpp \
+    cytrus_video.cpp \
+    cytrus_audio.cpp \
+    cytrus_input.cpp \
+    cytrus_memory.cpp
+
+# Cytrus core interface
+CORE_INTERFACE_SOURCES := \
+    Core/core/libretro_interface.cpp
+
+# Core Citra sources (essential files)
+CORE_SOURCES := \
+    Core/core/core.cpp \
+    Core/core/loader/loader.cpp \
+    Core/core/hle/service/cfg/cfg.cpp \
+    Core/core/hle/service/am/am.cpp \
+    Core/core/hle/service/fs/fs.cpp \
+    Core/core/hle/service/ptm/ptm.cpp \
+    Core/core/frontend/applets/default_applets.cpp \
+    Core/input_common/main.cpp \
+    Core/input_common/keyboard.cpp \
+    Core/input_common/main.cpp \
+    Core/network/network.cpp \
+    Core/network/network_interface.cpp \
+    Core/audio_core/audio_interface.cpp \
+    Core/audio_core/dsp_interface.cpp \
+    Core/audio_core/hle/hle.cpp \
+    Core/video_core/gpu.cpp \
+    Core/video_core/renderer_base.cpp \
+    Core/video_core/rasterizer_interface.cpp \
+    Core/common/file_util.cpp \
+    Core/common/settings.cpp \
+    Core/common/assert.cpp \
+    Core/common/bit_set.cpp \
+    Core/common/common_types.cpp \
+    Core/common/logging/backend.cpp \
+    Core/common/logging/log.cpp \
+    Core/common/memory_types.cpp \
+    Core/common/page_table.cpp \
+    Core/common/param_package.cpp \
+    Core/common/scm_rev.cpp \
+    Core/common/string_util.cpp \
+    Core/common/thread.cpp \
+    Core/common/telemetry.cpp
+
+# All sources
+SOURCES := $(LIBRETRO_SOURCES) $(CORE_INTERFACE_SOURCES) $(CORE_SOURCES)
+
+# Object files
+OBJECTS := $(SOURCES:.cpp=.o)
+
+# Build rules
+.PHONY: all clean
+
+all: $(TARGET)
+
+# Link target
+$(TARGET): $(OBJECTS)
+	$(CXX) $(OBJECTS) $(LDFLAGS) $(SHARED) -o $@
+
+# Compile C++ sources
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+# Compile C sources
+%.o: %.c
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+
+# Clean build artifacts
+clean:
+	rm -f $(OBJECTS) $(TARGET)
+
+# Help target
+help:
+	@echo "Cytrus libretro core build system"
+	@echo ""
+	@echo "Available targets:"
+	@echo "  all     - Build the libretro core"
+	@echo "  clean   - Remove build artifacts"
+	@echo "  help    - Show this help message"
+	@echo ""
+	@echo "Platform examples:"
+	@echo "  make -f Makefile.libretro                    # Auto-detect platform"
+	@echo "  make -f Makefile.libretro platform=unix     # Linux/Unix"
+	@echo "  make -f Makefile.libretro platform=osx      # macOS"
+	@echo "  make -f Makefile.libretro platform=ios-arm64 # iOS arm64"
+	@echo "  make -f Makefile.libretro platform=win      # Windows"
+	@echo ""
+	@echo "Output: $(TARGET)"
