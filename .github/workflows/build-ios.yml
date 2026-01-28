@@ -21,12 +21,12 @@ jobs:
 
     - name: Install dependencies
       run: |
-        # Install retroarch-apple-deps (includes fmt and other dependencies)
+        # Install host tools via Homebrew
+        brew install cmake
+
+        # Install retroarch-apple-deps for iOS target dependencies
         git clone https://github.com/warmenhoven/retroarch-apple-deps.git retroarch-apple-deps
         sudo ln -s $PWD/retroarch-apple-deps /usr/local/share
-        
-        # Install additional dependencies
-        brew install openal-soft sdl3
 
     - name: Build core
       run: |

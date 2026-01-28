@@ -1,134 +1,86 @@
 # Cytrus libretro core Makefile.libretro
-# Based on standard libretro core Makefile structure
+# Targeted for iOS-only as requested
 
-# Core name
 TARGET_NAME := cytrus
-
-# Static linking flag
-ifeq ($(STATIC_LINKING), 1)
-EXT := a
-endif
+DEBUG ?= 0
 
 # Platform detection and configuration
-ifeq ($(platform),)
-   platform = unix
-   ifeq ($(shell uname -a),)
-      platform = win
-   else ifneq ($(findstring MINGW,$(shell uname -a)),)
-      platform = win
-   else ifneq ($(findstring Darwin,$(shell uname -a)),)
-      platform = osx
-   endif
-endif
+platform ?= ios-arm64
 
-# Unix/Linux
-ifeq ($(platform), unix)
-   TARGET := $(TARGET_NAME)_libretro.so
-   fpic := -fPIC
-   SHARED := -shared -Wl,--version-script=link.T -Wl,--no-undefined
-   CXXFLAGS += -D__linux__
-   LDFLAGS += -lGL -lpthread -ldl
-
-# macOS
-else ifeq ($(platform), osx)
-   TARGET := $(TARGET_NAME)_libretro.dylib
-   fpic := -fPIC
-   SHARED := -dynamiclib
-   CXXFLAGS += -D__APPLE__ -stdlib=libc++
-   LDFLAGS += -framework OpenGL -framework Foundation -framework AppKit
-   
-   # Boost configuration for macOS
-   BOOST_ROOT ?= $(shell brew --prefix boost)/include
-   INCLUDES += -I$(BOOST_ROOT)
-
-# iOS (arm64)
-else ifeq ($(platform), ios-arm64)
+# iOS (arm64) configuration
+ifeq ($(platform), ios-arm64)
    TARGET := $(TARGET_NAME)_libretro_ios.dylib
    fpic := -fPIC
    SHARED := -dynamiclib
-   CXXFLAGS += -D__APPLE__ -D__IOS__ -stdlib=libc++
    
    # iOS SDK setup
-   ifeq ($(IOSSDK),)
-      IOSSDK := $(shell xcodebuild -version -sdk iphoneos Path)
-   endif
+   IOSSDK := $(shell xcodebuild -version -sdk iphoneos Path)
    
-   # Compiler configuration for iOS arm64
-   CC = cc -arch arm64 -isysroot $(IOSSDK)
-   CXX = c++ -arch arm64 -isysroot $(IOSSDK)
-   CXXFLAGS += -miphoneos-version-min=13.0
-   CFLAGS += -miphoneos-version-min=13.0
-   LDFLAGS += -framework OpenGL -framework Foundation -framework UIKit
-   LDFLAGS += -miphoneos-version-min=13.0
+   # Compiler configuration
+   CC = clang -arch arm64 -isysroot $(IOSSDK)
+   CXX = clang++ -arch arm64 -isysroot $(IOSSDK)
    
-   # retroarch-apple-deps configuration for iOS
-   INCLUDES += -I/usr/local/share/retroarch-apple-deps/include
+   # Deployment target
+   IPHONEOS_DEPLOYMENT_TARGET ?= 13.0
+   CXXFLAGS += -miphoneos-version-min=$(IPHONEOS_DEPLOYMENT_TARGET)
+   CFLAGS += -miphoneos-version-min=$(IPHONEOS_DEPLOYMENT_TARGET)
+   LDFLAGS += -miphoneos-version-min=$(IPHONEOS_DEPLOYMENT_TARGET)
    
-   # Boost configuration for iOS
-   BOOST_ROOT ?= $(shell brew --prefix boost)/include
-   INCLUDES += -I$(BOOST_ROOT)
-
-# iOS (armv7)
-else ifeq ($(platform), ios)
-   TARGET := $(TARGET_NAME)_libretro_ios.dylib
-   fpic := -fPIC
-   SHARED := -dynamiclib
-   CXXFLAGS += -D__APPLE__ -D__IOS__ -stdlib=libc++
+   # Frameworks
+   LDFLAGS += -framework Foundation -framework UIKit -framework Metal -framework QuartzCore
    
-   # iOS SDK setup
-   ifeq ($(IOSSDK),)
-      IOSSDK := $(shell xcodebuild -version -sdk iphoneos Path)
-   endif
+   # Dependency discovery
+   # We rely on retroarch-apple-deps for iOS cross-compiled dependencies
+   # brew install is for host tools only
+   APPLE_DEPS := /usr/local/share/retroarch-apple-deps
+   INCLUDES += -I$(APPLE_DEPS)/include
+   LDFLAGS += -L$(APPLE_DEPS)/lib
    
-   # Compiler configuration for iOS armv7
-   CC = cc -arch armv7 -isysroot $(IOSSDK)
-   CXX = c++ -arch armv7 -isysroot $(IOSSDK)
-   CXXFLAGS += -miphoneos-version-min=9.0
-   CFLAGS += -miphoneos-version-min=9.0
-   LDFLAGS += -framework OpenGL -framework Foundation -framework UIKit
-   LDFLAGS += -miphoneos-version-min=9.0
-   
-   # retroarch-apple-deps configuration for iOS
-   INCLUDES += -I/usr/local/share/retroarch-apple-deps/include
-   
-   # Boost configuration for iOS
-   BOOST_ROOT ?= $(shell brew --prefix boost)/include
-   INCLUDES += -I$(BOOST_ROOT)
-
-# Windows
-else ifeq ($(platform), win)
-   TARGET := $(TARGET_NAME)_libretro.dll
-   fpic := -fPIC
-   SHARED := -shared -Wl,--version-script=link.T -Wl,--no-undefined
-   CXXFLAGS += -D__WIN32__ -static-libgcc -static-libstdc++
-   LDFLAGS += -lws2_32 -lwinmm -lgdi32 -lopengl32
+else
+   $(error Platform $(platform) is not supported. This core is configured for iOS only.)
 endif
 
-# Compiler flags (common)
+# Common flags
 CXXFLAGS += -O2 -g -Wall -Wextra -fno-strict-aliasing -fno-exceptions -fvisibility=hidden $(fpic)
-CXXFLAGS += -std=c++20
+CXXFLAGS += -std=c++20 -D__APPLE__ -D__IOS__ -DENABLE_VULKAN
 CFLAGS += -O2 -g -Wall -Wextra $(fpic)
-INCFLAGS += -I$(CURDIR)
-INCFLAGS += -I$(CURDIR)/Core/Core
 
 # Include directories
-INCLUDES := -I. \
+INCLUDES += -I. \
            -I$(CURDIR) \
-           -I$(CURDIR)/Core \
            -I$(CURDIR)/Core/include \
-           -I$(CURDIR)/libretro-common/include \
-           -I$(CURDIR)/Core/audio_core \
-           -I$(CURDIR)/Core/common \
-           -I$(CURDIR)/Core/core \
-           -I$(CURDIR)/Core/core/arm \
-           -I$(CURDIR)/Core/core/hle \
-           -I$(CURDIR)/Core/core/hle/service \
-           -I$(CURDIR)/Core/core/frontend \
-           -I$(CURDIR)/Core/input_common \
-           -I$(CURDIR)/Core/network \
-           -I$(CURDIR)/Core/video_core
+           -I$(CURDIR)/libretro-common/include
 
-# Source files (libretro interface)
+# Explicit Source list to avoid multiple definitions and platform conflicts
+CORE_SOURCES := \
+    $(wildcard Core/common/*.cpp) \
+    $(wildcard Core/common/aarch64/*.cpp) \
+    $(wildcard Core/core/*.cpp) \
+    $(wildcard Core/core/arm/*.cpp) \
+    $(wildcard Core/core/arm/dynarmic/*.cpp) \
+    $(wildcard Core/core/arm/dyncom/*.cpp) \
+    $(wildcard Core/core/arm/skyeye_common/*.cpp) \
+    $(wildcard Core/core/file_sys/*.cpp) \
+    $(wildcard Core/core/hle/*.cpp) \
+    $(wildcard Core/core/hle/kernel/*.cpp) \
+    $(wildcard Core/core/hle/service/*.cpp) \
+    $(wildcard Core/core/loader/*.cpp) \
+    $(wildcard Core/audio_core/*.cpp) \
+    $(wildcard Core/audio_core/hle/*.cpp) \
+    $(wildcard Core/audio_core/lle/*.cpp) \
+    $(wildcard Core/video_core/*.cpp) \
+    $(wildcard Core/video_core/pica/*.cpp) \
+    $(wildcard Core/video_core/shader/*.cpp) \
+    $(wildcard Core/video_core/shader/generator/*.cpp) \
+    $(wildcard Core/video_core/renderer_vulkan/*.cpp) \
+    $(wildcard Core/input_common/*.cpp) \
+    $(wildcard Core/network/*.cpp)
+
+# Filter out incompatible files
+# Exclude other platform sinks and sources
+SOURCES := $(filter-out Core/audio_core/sdl3_sink.cpp Core/audio_core/openal_sink.cpp, $(CORE_SOURCES))
+
+# Libretro interface files
 LIBRETRO_SOURCES := \
     cytrus_libretro_core.cpp \
     cytrus_frontend.cpp \
@@ -137,52 +89,21 @@ LIBRETRO_SOURCES := \
     cytrus_input.cpp \
     cytrus_memory.cpp
 
-# Cytrus core interface
-CORE_INTERFACE_SOURCES := \
-    Core/core/libretro_interface.cpp
+SOURCES += $(LIBRETRO_SOURCES)
 
-# Core Citra sources (essential files)
-CORE_SOURCES := \
-    Core/core/core.cpp \
-    Core/core/loader/loader.cpp \
-    Core/core/hle/service/cfg/cfg.cpp \
-    Core/core/hle/service/am/am.cpp \
-    Core/core/hle/service/fs/fs.cpp \
-    Core/core/hle/service/ptm/ptm.cpp \
-    Core/core/frontend/applets/default_applets.cpp \
-    Core/input_common/main.cpp \
-    Core/input_common/keyboard.cpp \
-    Core/network/network.cpp \
-    Core/network/network_interface.cpp \
-    Core/audio_core/audio_interface.cpp \
-    Core/audio_core/dsp_interface.cpp \
-    Core/audio_core/hle/hle.cpp \
-    Core/video_core/gpu.cpp \
-    Core/video_core/renderer_base.cpp \
-    Core/video_core/rasterizer_interface.cpp \
-    Core/common/file_util.cpp \
-    Core/common/settings.cpp \
-    Core/common/assert.cpp \
-    Core/common/bit_set.cpp \
-    Core/common/common_types.cpp \
-    Core/common/logging/backend.cpp \
-    Core/common/logging/log.cpp \
-    Core/common/memory_types.cpp \
-    Core/common/page_table.cpp \
-    Core/common/param_package.cpp \
-    Core/common/scm_rev.cpp \
-    Core/common/string_util.cpp \
-    Core/common/thread.cpp \
-    Core/common/telemetry.cpp
-
-# All sources
-SOURCES := $(LIBRETRO_SOURCES) $(CORE_INTERFACE_SOURCES) $(CORE_SOURCES)
+# Libretro-common sources
+LIBRETRO_COMMON_SOURCES_C := \
+    libretro-common/streams/file_stream.c \
+    libretro-common/file/file_path.c \
+    libretro-common/compat/compat_strl.c \
+    libretro-common/compat/compat_posix_string.c \
+    libretro-common/string/stdstring.c
 
 # Object files
-OBJECTS := $(SOURCES:.cpp=.o)
+OBJECTS := $(SOURCES:.cpp=.o) $(LIBRETRO_COMMON_SOURCES_C:.c=.o)
 
 # Build rules
-.PHONY: all clean
+.PHONY: all clean help
 
 all: $(TARGET)
 
@@ -204,18 +125,12 @@ clean:
 
 # Help target
 help:
-	@echo "Cytrus libretro core build system"
+	@echo "Cytrus libretro core build system (iOS Only)"
 	@echo ""
 	@echo "Available targets:"
-	@echo "  all     - Build the libretro core"
+	@echo "  all     - Build the libretro core for iOS"
 	@echo "  clean   - Remove build artifacts"
 	@echo "  help    - Show this help message"
 	@echo ""
-	@echo "Platform examples:"
-	@echo "  make -f Makefile.libretro                    # Auto-detect platform"
-	@echo "  make -f Makefile.libretro platform=unix     # Linux/Unix"
-	@echo "  make -f Makefile.libretro platform=osx      # macOS"
-	@echo "  make -f Makefile.libretro platform=ios-arm64 # iOS arm64"
-	@echo "  make -f Makefile.libretro platform=win      # Windows"
-	@echo ""
+	@echo "Current platform: $(platform)"
 	@echo "Output: $(TARGET)"
