@@ -97,6 +97,7 @@ INCFLAGS += -I$(CURDIR)/Core/Core
 INCLUDES := -I. \
            -I$(CURDIR) \
            -I$(CURDIR)/Core \
+           -I$(CURDIR)/Core/include \
            -I$(CURDIR)/libretro-common/include \
            -I$(CURDIR)/Core/audio_core \
            -I$(CURDIR)/Core/common \
