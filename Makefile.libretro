@@ -106,7 +106,7 @@ endif
 
 # Compiler flags (common)
 CXXFLAGS += -O2 -g -Wall -Wextra -fno-strict-aliasing -fno-exceptions -fvisibility=hidden $(fpic)
-CXXFLAGS += -std=c++17
+CXXFLAGS += -std=c++20
 CFLAGS += -O2 -g -Wall -Wextra $(fpic)
 INCFLAGS += -I$(CURDIR)
 INCFLAGS += -I$(CURDIR)/Core/Core
