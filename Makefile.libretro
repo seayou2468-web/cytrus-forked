@@ -94,6 +94,7 @@ CFLAGS += -O2 -g -Wall -Wextra $(fpic)
 # Include directories
 INCLUDES := -I. \
            -I$(PWD) \
+           -I$(PWD)/Core \
            -Ilibretro-common/include \
            -ICore \
            -ICore/audio_core \
