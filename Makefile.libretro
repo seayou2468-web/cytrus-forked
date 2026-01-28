@@ -91,6 +91,7 @@ CXXFLAGS += -O2 -g -Wall -Wextra -fno-strict-aliasing -fno-exceptions -fvisibili
 CXXFLAGS += -std=c++17
 CFLAGS += -O2 -g -Wall -Wextra $(fpic)
 INCFLAGS += -I$(CURDIR)
+INCFLAGS += -I$(CURDIR)/Core/Core
 
 # Include directories
 INCLUDES := -I. \
