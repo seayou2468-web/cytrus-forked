@@ -6,7 +6,6 @@
 
 #include <functional>
 #include <memory>
-#include <boost/serialization/access.hpp>
 
 #include "core/hle/service/gsp/gsp_interrupt.h"
 
