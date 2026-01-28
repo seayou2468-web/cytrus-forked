@@ -21,6 +21,20 @@
 #include "common/settings.h"
 #include "common/file_util.h"
 #include "common/logging/log.h"
+#include "core/frontend/emu_window.h"
+
+// Libretro EmuWindow implementation
+namespace Frontend {
+class LibretroEmuWindow : public EmuWindow {
+public:
+    LibretroEmuWindow() {
+        UpdateCurrentFramebufferLayout(800, 480);
+    }
+    void PollEvents() override {}
+};
+}
+
+static std::unique_ptr<Frontend::LibretroEmuWindow> emu_window;
 
 // Frontend interface
 extern "C" {
@@ -265,6 +279,8 @@ void retro_init(void) {
     Settings::values.use_hw_shader.SetValue(true);
     Settings::values.resolution_factor.SetValue(1);
     Settings::values.layout_option.SetValue(Settings::LayoutOption::TopBottom);
+    Settings::values.graphics_api.SetValue(Settings::GraphicsAPI::Libretro);
+    Settings::values.output_type.SetValue(AudioCore::SinkType::Libretro);
     
     initialized = true;
     cytrus_log(RETRO_LOG_INFO, "Cytrus libretro core initialized\n");
@@ -350,8 +366,11 @@ bool retro_load_game(const struct retro_game_info* game) {
         InputCommon::Init();
         Network::Init();
         
+        // Create EmuWindow for libretro
+        emu_window = std::make_unique<Frontend::LibretroEmuWindow>();
+
         // Load the game using Cytrus's system
-        bool load_result = system.Load(game->path);
+        bool load_result = (system.Load(*emu_window, game->path) == Core::System::ResultStatus::Success);
         
         if (!load_result) {
             cytrus_log(RETRO_LOG_ERROR, "Failed to load game: %s\n", game->path);

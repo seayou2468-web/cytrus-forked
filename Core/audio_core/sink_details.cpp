@@ -11,6 +11,7 @@
 #include "audio_core/coreaudio_sink.h"
 #include "audio_core/sdl3_sink.h"
 #include "audio_core/openal_sink.h"
+#include "core/libretro_bridge.h"
 #include "common/logging/log.h"
 
 namespace AudioCore {
@@ -32,6 +33,9 @@ constexpr std::array sink_details = {
                     return std::make_unique<SDL3Sink>(std::string(device_id));
                 },
                 &ListSDL3SinkDevices},
+    SinkDetails{SinkType::Libretro, "Libretro",
+                &Libretro::CreateLibretroAudioSink,
+                &Libretro::ListLibretroAudioSinkDevices},
     SinkDetails{SinkType::Null, "None",
                 [](std::string_view device_id) -> std::unique_ptr<Sink> {
                     return std::make_unique<NullSink>(device_id);

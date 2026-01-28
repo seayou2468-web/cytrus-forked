@@ -14,6 +14,7 @@
 #ifdef ENABLE_VULKAN
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
 #endif
+#include "core/libretro_bridge.h"
 #include "video_core/video_core.h"
 
 namespace VideoCore {
@@ -35,6 +36,8 @@ std::unique_ptr<RendererBase> CreateRenderer(Frontend::EmuWindow& emu_window,
     case Settings::GraphicsAPI::OpenGL:
         return std::make_unique<OpenGL::RendererOpenGL>(system, pica, emu_window, secondary_window);
 #endif
+    case Settings::GraphicsAPI::Libretro:
+        return std::make_unique<Libretro::LibretroRenderer>(system, emu_window, secondary_window);
     default:
         LOG_CRITICAL(Render,
                      "Unknown or unsupported graphics API {}, falling back to available default",
