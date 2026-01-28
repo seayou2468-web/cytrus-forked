@@ -1,12 +1,25 @@
 name: Build iOS libretro Core
 
 on:
-  workflow_dispatch:  # Manual execution only
+  workflow_dispatch:
+    paths:
+      - 'Core/**'
+      - 'cytrus_*.cpp'
+      - 'cytrus_*.h'
+      - 'Makefile'
+      - '.github/workflows/build-ios.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'Core/**'
+      - 'cytrus_*.cpp'
+      - 'cytrus_*.h'
+      - 'Makefile'
 
 jobs:
   build-ios:
     runs-on: macos-latest
-    
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -22,88 +35,58 @@ jobs:
     - name: Show Xcode version
       run: xcodebuild -version
 
-    - name: Show iOS SDK version
-      run: xcodebuild -showsdks | grep ios
+    - name: Show available SDKs (確認のみ)
+      run: xcodebuild -showsdks
 
-    - name: Build core using individual core method
+    - name: Install dependencies
       run: |
-        # Build using individual core Makefile.libretro method
-        echo "Building Cytrus for iOS arm64..."
-        
-        # Set iOS SDK path
-        IOSSDK=$(xcodebuild -version -sdk iphoneos Path)
-        echo "iOS SDK path: $IOSSDK"
-        
-        # Build using Makefile.libretro with platform=ios-arm64
-        if [ -f "Makefile.libretro" ]; then
-          echo "Using Makefile.libretro..."
-          make -f Makefile.libretro platform=ios-arm64 -j$(sysctl -n hw.ncpu) VERBOSE=1
-        else
-          echo "Using Makefile..."
-          make platform=ios-arm64 -j$(sysctl -n hw.ncpu) VERBOSE=1
-        fi
-        
-        # Check if build succeeded
-        if [ -f "cytrus_libretro_ios.dylib" ]; then
-          echo "Build successful!"
-          mkdir -p dist/ios-arm64
-          cp cytrus_libretro_ios.dylib dist/ios-arm64/
-          
-          # Get library info
-          file dist/ios-arm64/cytrus_libretro_ios.dylib
-          otool -L dist/ios-arm64/cytrus_libretro_ios.dylib
-          
-          # Create info file
-          cat > dist/ios-arm64/cytrus_libretro.info << 'INFO_EOF'
-        display_name = "Cytrus (Nintendo 3DS)"
-        corename = "Cytrus"
-        author = "Citra Team / RetroArch Port"
-        supported_extensions = "3ds|3dsx|cia|elf"
-        coreversion = "1.0.0"
-        manufacturer = "Nintendo"
-        categories = "Emulator"
-        systemname = "Nintendo 3DS"
-        systemid = "nintendo_3ds"
-        database = "Nintendo - Nintendo 3DS"
-        license = "GPLv2"
-        permissions = ""
-        notes = "Nintendo 3DS emulator based on Citra. Requires system files and firmware for full functionality."
-        INFO_EOF
-        else
-          echo "Build failed!"
-          echo "Available files:"
-          ls -la *.dylib 2>/dev/null || echo "No .dylib files found"
-          exit 1
-        fi
+        brew install cmake
 
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
+    - name: Cache build artifacts
+      uses: actions/cache@v3
       with:
-        name: cytrus-ios-libretro-core
         path: |
-          dist/ios-arm64/*.dylib
-          dist/ios-arm64/*.info
-        retention-days: 30
+          ~/Library/Developer/Xcode/DerivedData
+          build
+        key: ${{ runner.os }}-build-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-build-
 
-    - name: Generate build summary
+    - name: Create build directory
+      run: mkdir -p build
+
+    - name: Create iOS toolchain file
       run: |
-        echo "# Build Summary" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "## Platform: iOS (arm64)" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        
-        if [ -f "dist/ios-arm64/cytrus_libretro_ios.dylib" ]; then
-          echo "✅ Build successful!" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Files created:" >> $GITHUB_STEP_SUMMARY
-          echo "- \`cytrus_libretro_ios.dylib\` - Main core library" >> $GITHUB_STEP_SUMMARY
-          echo "- \`cytrus_libretro.info\` - Core information file" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Library information:" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          file dist/ios-arm64/cytrus_libretro_ios.dylib >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-        else
-          echo "❌ Build failed!" >> $GITHUB_STEP_SUMMARY
-          exit 1
-        fi
+        cat > ios.toolchain.cmake << 'EOF'
+        set(CMAKE_SYSTEM_NAME iOS)
+        set(CMAKE_OSX_DEPLOYMENT_TARGET "13.0")
+        set(CMAKE_IOS_ARCHITECTURES "arm64;x86_64")
+
+        set(CMAKE_C_COMPILER clang)
+        set(CMAKE_CXX_COMPILER clang++)
+
+        set(CMAKE_C_FLAGS_INIT "-fPIC")
+        set(CMAKE_CXX_FLAGS_INIT "-fPIC -std=c++17")
+
+        set(CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS "-shared")
+        set(CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS "-shared")
+
+        set(CMAKE_C_COMPILER_WORKS TRUE)
+        set(CMAKE_CXX_COMPILER_WORKS TRUE)
+        EOF
+
+    - name: Configure CMake for iOS
+      run: |
+        cd build
+        cmake .. \
+          -DCMAKE_SYSTEM_NAME=iOS \
+          -DCMAKE_IOS_ARCHITECTURES="arm64;x86_64" \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_TOOLCHAIN_FILE=../ios.toolchain.cmake \
+          -DBUILD_SHARED_LIBS=ON \
+          -DCMAKE_INSTALL_PREFIX=./install
+
+    - name: Build with CMake
+      run: |
+        cd build
+        make -j$(sysctl -n hw.ncpu)

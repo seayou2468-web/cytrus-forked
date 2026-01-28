@@ -1,8 +1,7 @@
 name: Build iOS libretro Core (Makefile Method)
 
 on:
-  push:
-    branches: [ main, develop ]
+  workflow_dispatch:
     paths:
       - 'Core/**'
       - 'cytrus_*.cpp'
@@ -17,7 +16,6 @@ on:
       - 'cytrus_*.h'
       - 'Makefile'
       - '.github/workflows/build-ios-makefile.yml'
-  workflow_dispatch:
 
 jobs:
   build-ios:
@@ -173,7 +171,7 @@ jobs:
         EOF
 
     - name: Upload architecture-specific artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: cytrus-ios-${{ matrix.arch }}-${{ matrix.ios_min }}
         path: |
@@ -183,7 +181,7 @@ jobs:
 
     - name: Upload universal binary (if created)
       if: matrix.arch == 'arm64' && hashFiles('dist/ios-universal/*.dylib') != ''
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: cytrus-ios-universal
         path: |
