@@ -495,3 +495,4 @@ void retro_get_system_av_info(struct retro_system_av_info* info) {
     info->timing.fps = fps;
     info->timing.sample_rate = 44100.0; // Standard audio sample rate
 }
+
