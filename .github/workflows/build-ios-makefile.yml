@@ -1,8 +1,7 @@
 name: Build iOS libretro Core (Makefile Method)
 
 on:
-  push:
-    branches: [ main, develop ]
+  workflow_dispatch:
     paths:
       - 'Core/**'
       - 'cytrus_*.cpp'
