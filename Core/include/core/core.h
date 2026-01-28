@@ -9,8 +9,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
-#include <boost/optional.hpp>
-#include <boost/serialization/version.hpp>
+#include <optional>
 #include "common/common_types.h"
 #include "core/arm/arm_interface.h"
 #include "core/cheats/cheats.h"
