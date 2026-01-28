@@ -31,7 +31,7 @@ jobs:
     - name: Build core
       run: |
         # Set environment variables for the build
-        export IPHONEOS_DEPLOYMENT_TARGET=13.0
+        export IPHONEOS_DEPLOYMENT_TARGET=14.0
         make -f Makefile.libretro platform=ios-arm64 -j$(sysctl -n hw.ncpu)
 
     - name: Upload artifacts
