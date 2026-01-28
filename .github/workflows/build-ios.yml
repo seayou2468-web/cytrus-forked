@@ -15,7 +15,6 @@ on:
       - 'cytrus_*.cpp'
       - 'cytrus_*.h'
       - 'Makefile'
-  workflow_dispatch:
 
 jobs:
   build-ios:
