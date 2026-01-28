@@ -1,26 +1,29 @@
-# This is a sample build workflow for iOS
+# This is a Workflow
 
 name: Build iOS
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   build:
-    runs-on: macOS-latest
-
+    runs-on: macos-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Set up Xcode
-        uses: actions/setup-xcode@v2
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "2.7"
 
-      - name: Install Dependencies
-        run: | 
-          pod install
+      - name: Install dependencies
+        run: |
+          gem install bundler
+          bundle install
 
       - name: Build
-        run: | 
-          xcodebuild -workspace YourApp.xcworkspace -scheme YourScheme -configuration Release\n          -sdk iphoneos\n          -destination 'generic/platform=iOS'\n          -derivedDataPath ./DerivedData\n          -includePaths video_core/gpu.h Core/video_core/gpu.h Core/core/core.h
+        run: |
+          bundle exec fastlane build
