@@ -35,7 +35,7 @@ static const unsigned BOTTOM_SCREEN_HEIGHT = 240;
 static unsigned resolution_scale = 1;
 
 // Initialize video subsystem
-bool cytrus_video_init(unsigned width, unsigned height, unsigned scale) {
+bool cytrus_video_init(unsigned /*width*/, unsigned /*height*/, unsigned scale) {
     resolution_scale = scale;
     
     // Calculate actual dimensions based on layout and scale

@@ -58,8 +58,8 @@ public:
         return push_count;
     }
 
-    std::size_t Push(std::span<const T> input) {
-        return Push(input.data(), input.size() / granularity);
+    std::size_t Push(const T* input, std::size_t count) {
+        return Push(input, count / granularity);
     }
 
     /// Pops slots from the ring buffer

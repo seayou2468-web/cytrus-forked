@@ -21,7 +21,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        brew install openal-soft sdl3
+        brew install fmt openal-soft sdl3
 
     - name: Build core
       run: |

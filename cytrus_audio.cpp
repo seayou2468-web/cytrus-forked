@@ -3,7 +3,7 @@
 #include <string.h>
 #include <math.h>
 
-#include "audio_core/audio_interface.h"
+#include "audio_core/dsp_interface.h"
 #include "audio_core/sink.h"
 
 extern retro_audio_sample_t audio_sample_cb;
