@@ -19,9 +19,6 @@ jobs:
       with:
         xcode-version: '26.1'
 
-    - name: Show Xcode version
-      run: xcodebuild -version
-
     - name: Show iOS SDK version
       run: xcodebuild -showsdks | grep iPhoneOS
 
