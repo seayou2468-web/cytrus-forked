@@ -224,4 +224,3 @@ void cytrus_video_set_resolution_scale(unsigned scale) {
 ScreenLayout cytrus_video_get_layout(void) {
     return current_layout;
 }
-
