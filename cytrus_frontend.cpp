@@ -3,12 +3,12 @@
 #include <string.h>
 #include <math.h>
 
-#include "Core/video_core/gpu.h"
-#include "Core/video_core/renderer_base.h"
-#include "Core/audio_core/audio_interface.h"
-#include "Core/core/hle/service/hid/hid.h"
-#include "Core/core/hle/service/ir/ir_user.h"
-#include "Core/common/settings.h"
+#include "video_core/gpu.h"
+#include "video_core/renderer_base.h"
+#include "audio_core/audio_interface.h"
+#include "core/hle/service/hid/hid.h"
+#include "core/hle/service/ir/ir_user.h"
+#include "common/settings.h"
 
 // libretro callbacks
 extern retro_video_refresh_t video_cb;
