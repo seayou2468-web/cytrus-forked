@@ -98,17 +98,16 @@ INCLUDES := -I. \
            -I$(CURDIR) \
            -I$(CURDIR)/Core \
            -I$(CURDIR)/libretro-common/include \
-           -ICore \
-           -ICore/audio_core \
-           -ICore/common \
-           -ICore/core \
-           -ICore/core/arm \
-           -ICore/core/hle \
-           -ICore/core/hle/service \
-           -ICore/frontend \
-           -ICore/input_common \
-           -ICore/network \
-           -ICore/video_core
+           -I$(CURDIR)/Core/audio_core \
+           -I$(CURDIR)/Core/common \
+           -I$(CURDIR)/Core/core \
+           -I$(CURDIR)/Core/core/arm \
+           -I$(CURDIR)/Core/core/hle \
+           -I$(CURDIR)/Core/core/hle/service \
+           -I$(CURDIR)/Core/core/frontend \
+           -I$(CURDIR)/Core/input_common \
+           -I$(CURDIR)/Core/network \
+           -I$(CURDIR)/Core/video_core
 
 # Source files (libretro interface)
 LIBRETRO_SOURCES := \
