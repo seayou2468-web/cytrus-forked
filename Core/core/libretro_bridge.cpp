@@ -39,10 +39,11 @@ VideoCore::RasterizerInterface* LibretroRenderer::Rasterizer() {
     return &null_rasterizer;
 }
 
+extern "C" void cytrus_video_render_frame();
+
 void LibretroRenderer::SwapBuffers() {
-    // In a real Citra core, we would pull from the GPU/Rasterizer.
-    // For this bridge, we assume the frontend provides a way to get the data.
-    // This is currently a stub that allows the core to 'run'.
+    // Call the video render function to send the frame to libretro
+    cytrus_video_render_frame();
 }
 
 void LibretroRenderer::TryPresent(int timeout_ms, bool is_secondary) {}

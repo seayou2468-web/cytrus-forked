@@ -10,7 +10,7 @@
 
 #include <version>
 
-#ifdef __cpp_lib_jthread
+#if defined(__cpp_lib_jthread) || (defined(__APPLE__) && __has_include(<stop_token>))
 
 #include <chrono>
 #include <condition_variable>

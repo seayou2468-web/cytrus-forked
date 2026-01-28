@@ -21,7 +21,7 @@ ifeq ($(platform), ios-arm64)
    CXX = clang++ -arch arm64 -isysroot $(IOSSDK)
    
    # Deployment target
-   IPHONEOS_DEPLOYMENT_TARGET ?= 13.0
+   IPHONEOS_DEPLOYMENT_TARGET ?= 14.0
    CXXFLAGS += -miphoneos-version-min=$(IPHONEOS_DEPLOYMENT_TARGET)
    CFLAGS += -miphoneos-version-min=$(IPHONEOS_DEPLOYMENT_TARGET)
    LDFLAGS += -miphoneos-version-min=$(IPHONEOS_DEPLOYMENT_TARGET)
@@ -40,7 +40,7 @@ endif
 
 # Common flags
 CXXFLAGS += -O2 -g -Wall -Wextra -fno-strict-aliasing -fno-exceptions -fvisibility=hidden $(fpic)
-CXXFLAGS += -std=c++20 -D__APPLE__ -D__IOS__ -DENABLE_VULKAN -DENABLE_LIBRETRO -DMOLTENVK_LINKED
+CXXFLAGS += -std=c++20 -stdlib=libc++ -D__APPLE__ -D__IOS__ -DENABLE_VULKAN -DENABLE_LIBRETRO -DMOLTENVK_LINKED
 CFLAGS += -O2 -g -Wall -Wextra $(fpic)
 
 # Include directories
