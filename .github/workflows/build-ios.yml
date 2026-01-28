@@ -1,103 +1,26 @@
-name: Build iOS libretro Core
+# This is a sample build workflow for iOS
+
+name: Build iOS
 
 on:
-  workflow_dispatch:  # Manual execution only
+  push:
+    branches: [ main ]
 
 jobs:
-  build-ios:
-    runs-on: macos-latest
-    
+  build:
+    runs-on: macOS-latest
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
-        fetch-depth: 0
+      - name: Checkout
+        uses: actions/checkout@v2
 
-    - name: Setup Xcode
-      uses: maxim-lobanov/setup-xcode@v1
-      with:
-        xcode-version: '26.1'
+      - name: Set up Xcode
+        uses: actions/setup-xcode@v2
 
-    - name: Build core using individual core method
-      run: |
-        # Build using individual core Makefile.libretro method
-        echo "Building Cytrus for iOS arm64..."
-        
-        # Set iOS SDK path
-        IOSSDK=$(xcodebuild -version -sdk iphoneos Path)
-        echo "iOS SDK path: $IOSSDK"
-        
-        # Build using Makefile.libretro with platform=ios-arm64
-        if [ -f "Makefile.libretro" ]; then
-          echo "Using Makefile.libretro..."
-          make -f Makefile.libretro platform=ios-arm64 -j$(sysctl -n hw.ncpu) VERBOSE=1
-        else
-          echo "Using Makefile..."
-          make platform=ios-arm64 -j$(sysctl -n hw.ncpu) VERBOSE=1
-        fi
-        
-        # Check if build succeeded
-        if [ -f "cytrus_libretro_ios.dylib" ]; then
-          echo "Build successful!"
-          mkdir -p dist/ios-arm64
-          cp cytrus_libretro_ios.dylib dist/ios-arm64/
-          
-          # Get library info
-          file dist/ios-arm64/cytrus_libretro_ios.dylib
-          otool -L dist/ios-arm64/cytrus_libretro_ios.dylib
-          
-          # Create info file
-          cat > dist/ios-arm64/cytrus_libretro.info << 'INFO_EOF'
-        display_name = "Cytrus (Nintendo 3DS)"
-        corename = "Cytrus"
-        author = "Citra Team / RetroArch Port"
-        supported_extensions = "3ds|3dsx|cia|elf"
-        coreversion = "1.0.0"
-        manufacturer = "Nintendo"
-        categories = "Emulator"
-        systemname = "Nintendo 3DS"
-        systemid = "nintendo_3ds"
-        database = "Nintendo - Nintendo 3DS"
-        license = "GPLv2"
-        permissions = ""
-        notes = "Nintendo 3DS emulator based on Citra. Requires system files and firmware for full functionality."
-        INFO_EOF
-        else
-          echo "Build failed!"
-          echo "Available files:"
-          ls -la *.dylib 2>/dev/null || echo "No .dylib files found"
-          exit 1
-        fi
+      - name: Install Dependencies
+        run: | 
+          pod install
 
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: cytrus-ios-libretro-core
-        path: |
-          dist/ios-arm64/*.dylib
-          dist/ios-arm64/*.info
-        retention-days: 30
-
-    - name: Generate build summary
-      run: |
-        echo "# Build Summary" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "## Platform: iOS (arm64)" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        
-        if [ -f "dist/ios-arm64/cytrus_libretro_ios.dylib" ]; then
-          echo "✅ Build successful!" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Files created:" >> $GITHUB_STEP_SUMMARY
-          echo "- \`cytrus_libretro_ios.dylib\` - Main core library" >> $GITHUB_STEP_SUMMARY
-          echo "- \`cytrus_libretro.info\` - Core information file" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Library information:" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          file dist/ios-arm64/cytrus_libretro_ios.dylib >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-        else
-          echo "❌ Build failed!" >> $GITHUB_STEP_SUMMARY
-          exit 1
-        fi
+      - name: Build
+        run: | 
+          xcodebuild -workspace YourApp.xcworkspace -scheme YourScheme -configuration Release\n          -sdk iphoneos\n          -destination 'generic/platform=iOS'\n          -derivedDataPath ./DerivedData\n          -includePaths video_core/gpu.h Core/video_core/gpu.h Core/core/core.h
