@@ -38,7 +38,7 @@ else ifeq ($(platform), osx)
    LDFLAGS += -framework OpenGL -framework Foundation -framework AppKit
    
    # Boost configuration for macOS
-   BOOST_ROOT ?= /usr/local/include/boost
+   BOOST_ROOT ?= $(shell brew --prefix boost)/include
    INCLUDES += -I$(BOOST_ROOT)
 
 # iOS (arm64)
@@ -62,7 +62,7 @@ else ifeq ($(platform), ios-arm64)
    LDFLAGS += -miphoneos-version-min=13.0
    
    # Boost configuration for iOS
-   BOOST_ROOT ?= /usr/local/include/boost
+   BOOST_ROOT ?= $(shell brew --prefix boost)/include
    INCLUDES += -I$(BOOST_ROOT)
 
 # iOS (armv7)
@@ -86,7 +86,7 @@ else ifeq ($(platform), ios)
    LDFLAGS += -miphoneos-version-min=9.0
    
    # Boost configuration for iOS
-   BOOST_ROOT ?= /usr/local/include/boost
+   BOOST_ROOT ?= $(shell brew --prefix boost)/include
    INCLUDES += -I$(BOOST_ROOT)
 
 # Windows
