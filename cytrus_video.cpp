@@ -113,42 +113,11 @@ void cytrus_video_render_frame(void) {
     if (!video_buffer || !video_cb)
         return;
     
-    // Get framebuffers from Citra's GPU
-    // This is a simplified implementation - would need to connect to actual Citra GPU output
-    static uint8_t top_screen_data[TOP_SCREEN_WIDTH * TOP_SCREEN_HEIGHT * 3];
-    static uint8_t bottom_screen_data[BOTTOM_SCREEN_WIDTH * BOTTOM_SCREEN_HEIGHT * 3];
-    
-    // Generate test patterns for demonstration
-    static uint32_t frame_counter = 0;
-    frame_counter++;
-    
-    // Top screen - red gradient
-    for (unsigned y = 0; y < TOP_SCREEN_HEIGHT; y++) {
-        for (unsigned x = 0; x < TOP_SCREEN_WIDTH; x++) {
-            uint8_t intensity = (x * 255) / TOP_SCREEN_WIDTH;
-            top_screen_data[(y * TOP_SCREEN_WIDTH + x) * 3 + 0] = intensity;     // R
-            top_screen_data[(y * TOP_SCREEN_WIDTH + x) * 3 + 1] = 0;           // G
-            top_screen_data[(y * TOP_SCREEN_WIDTH + x) * 3 + 2] = 0;           // B
-        }
-    }
-    
-    // Bottom screen - blue gradient with moving line
-    for (unsigned y = 0; y < BOTTOM_SCREEN_HEIGHT; y++) {
-        for (unsigned x = 0; x < BOTTOM_SCREEN_WIDTH; x++) {
-            uint8_t intensity = (y * 255) / BOTTOM_SCREEN_HEIGHT;
-            bottom_screen_data[(y * BOTTOM_SCREEN_WIDTH + x) * 3 + 0] = 0;           // R
-            bottom_screen_data[(y * BOTTOM_SCREEN_WIDTH + x) * 3 + 1] = 0;           // G
-            bottom_screen_data[(y * BOTTOM_SCREEN_WIDTH + x) * 3 + 2] = intensity;     // B
-        }
-    }
-    
-    // Add moving line to bottom screen
-    unsigned line_x = (frame_counter / 2) % BOTTOM_SCREEN_WIDTH;
-    for (unsigned y = 0; y < BOTTOM_SCREEN_HEIGHT; y++) {
-        bottom_screen_data[(y * BOTTOM_SCREEN_WIDTH + line_x) * 3 + 0] = 255; // R
-        bottom_screen_data[(y * BOTTOM_SCREEN_WIDTH + line_x) * 3 + 1] = 255; // G
-        bottom_screen_data[(y * BOTTOM_SCREEN_WIDTH + line_x) * 3 + 2] = 255; // B
-    }
+    // In a functional core, these would be pointers to the actual 3DS VRAM or linear heap
+    // For now, we keep them as placeholders but remove the test pattern generation
+    // to prepare for real data bridging.
+    static uint8_t top_screen_data[TOP_SCREEN_WIDTH * TOP_SCREEN_HEIGHT * 3] = {0};
+    static uint8_t bottom_screen_data[BOTTOM_SCREEN_WIDTH * BOTTOM_SCREEN_HEIGHT * 3] = {0};
     
     // Clear the entire buffer first
     memset(video_buffer, 0, video_width * video_height * sizeof(uint32_t));

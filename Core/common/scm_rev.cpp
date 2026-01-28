@@ -6,11 +6,11 @@
 
 #include <string>
 
-#define GIT_BRANCH   "@GIT_BRANCH@"
-#define GIT_DESC     "@GIT_DESC@"
-#define BUILD_NAME   "@REPO_NAME@"
-#define BUILD_VERSION "@BUILD_VERSION@"
-#define SHADER_CACHE_VERSION "@SHADER_CACHE_VERSION@"
+#define GIT_BRANCH   "main"
+#define GIT_DESC     "1.0.0"
+#define BUILD_NAME   "Cytrus"
+#define BUILD_VERSION "1.0.0"
+#define SHADER_CACHE_VERSION "1"
 
 #import "BuildStrings.h"
 

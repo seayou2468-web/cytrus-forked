@@ -47,7 +47,11 @@ void Init() {
     Input::RegisterFactory<Input::TouchDevice>("touch_from_button",
                                                std::make_shared<TouchFromButtonFactory>());
 
+#ifdef ENABLE_SDL2
     sdl = SDL::Init();
+#else
+    sdl = std::make_unique<SDL::NullState>();
+#endif
 
     udp = CemuhookUDP::Init();
 }
@@ -140,8 +144,10 @@ void ReloadInputDevices() {
 namespace Polling {
 
 std::vector<std::unique_ptr<DevicePoller>> GetPollers(DeviceType type) {
-    std::vector<std::unique_ptr<DevicePoller>> pollers = sdl->GetPollers(type);
-    return pollers;
+    if (sdl) {
+        return sdl->GetPollers(type);
+    }
+    return {};
 }
 
 } // namespace Polling

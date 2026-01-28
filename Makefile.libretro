@@ -27,11 +27,9 @@ ifeq ($(platform), ios-arm64)
    LDFLAGS += -miphoneos-version-min=$(IPHONEOS_DEPLOYMENT_TARGET)
    
    # Frameworks
-   LDFLAGS += -framework Foundation -framework UIKit -framework Metal -framework QuartzCore
+   LDFLAGS += -framework Foundation -framework UIKit -framework Metal -framework QuartzCore -framework AudioToolbox -framework AVFoundation
    
    # Dependency discovery
-   # We rely on retroarch-apple-deps for iOS cross-compiled dependencies
-   # brew install is for host tools only
    APPLE_DEPS := /usr/local/share/retroarch-apple-deps
    INCLUDES += -I$(APPLE_DEPS)/include
    LDFLAGS += -L$(APPLE_DEPS)/lib
@@ -42,43 +40,48 @@ endif
 
 # Common flags
 CXXFLAGS += -O2 -g -Wall -Wextra -fno-strict-aliasing -fno-exceptions -fvisibility=hidden $(fpic)
-CXXFLAGS += -std=c++20 -D__APPLE__ -D__IOS__ -DENABLE_VULKAN
+CXXFLAGS += -std=c++20 -D__APPLE__ -D__IOS__ -DENABLE_VULKAN -DENABLE_LIBRETRO -DMOLTENVK_LINKED
 CFLAGS += -O2 -g -Wall -Wextra $(fpic)
 
 # Include directories
 INCLUDES += -I. \
            -I$(CURDIR) \
            -I$(CURDIR)/Core/include \
-           -I$(CURDIR)/libretro-common/include
+           -I$(CURDIR)/libretro-common/include \
+           -I$(CURDIR)/BuildStrings
 
-# Explicit Source list to avoid multiple definitions and platform conflicts
-CORE_SOURCES := \
-    $(wildcard Core/common/*.cpp) \
-    $(wildcard Core/common/aarch64/*.cpp) \
-    $(wildcard Core/core/*.cpp) \
-    $(wildcard Core/core/arm/*.cpp) \
-    $(wildcard Core/core/arm/dynarmic/*.cpp) \
-    $(wildcard Core/core/arm/dyncom/*.cpp) \
-    $(wildcard Core/core/arm/skyeye_common/*.cpp) \
-    $(wildcard Core/core/file_sys/*.cpp) \
-    $(wildcard Core/core/hle/*.cpp) \
-    $(wildcard Core/core/hle/kernel/*.cpp) \
-    $(wildcard Core/core/hle/service/*.cpp) \
-    $(wildcard Core/core/loader/*.cpp) \
-    $(wildcard Core/audio_core/*.cpp) \
-    $(wildcard Core/audio_core/hle/*.cpp) \
-    $(wildcard Core/audio_core/lle/*.cpp) \
-    $(wildcard Core/video_core/*.cpp) \
-    $(wildcard Core/video_core/pica/*.cpp) \
-    $(wildcard Core/video_core/shader/*.cpp) \
-    $(wildcard Core/video_core/shader/generator/*.cpp) \
-    $(wildcard Core/video_core/renderer_vulkan/*.cpp) \
-    $(wildcard Core/input_common/*.cpp) \
-    $(wildcard Core/network/*.cpp)
+# Source files discovery
+CORE_SUBDIRS := \
+    Core/common \
+    Core/core \
+    Core/audio_core \
+    Core/video_core \
+    Core/input_common \
+    Core/network \
+    Core/web_service \
+    BuildStrings
+
+# Use find to get all .cpp and .mm files
+ALL_CPP := $(shell find $(CORE_SUBDIRS) -name "*.cpp")
+ALL_MM  := $(shell find $(CORE_SUBDIRS) -name "*.mm")
 
 # Filter out incompatible files
-# Exclude other platform sinks and sources
-SOURCES := $(filter-out Core/audio_core/sdl3_sink.cpp Core/audio_core/openal_sink.cpp, $(CORE_SOURCES))
+# Exclude platform-specific files that are not for Apple/iOS
+# Citra usually has them in specific subdirs or named *_win.cpp etc.
+SOURCES := $(filter-out \
+    %_x64_compiler.cpp \
+    %_x86_compiler.cpp \
+    %_win32.cpp \
+    %_sdl.cpp \
+    Core/audio_core/openal_sink.cpp \
+    Core/audio_core/sdl3_sink.cpp \
+    Core/audio_core/coreaudio_sink.cpp \
+    Core/input_common/sdl/% \
+    Core/video_core/renderer_opengl/% \
+    Core/core/dumping/ffmpeg_backend.cpp \
+    , $(ALL_CPP))
+
+SOURCES += $(ALL_MM)
 
 # Libretro interface files
 LIBRETRO_SOURCES := \
@@ -97,10 +100,16 @@ LIBRETRO_COMMON_SOURCES_C := \
     libretro-common/file/file_path.c \
     libretro-common/compat/compat_strl.c \
     libretro-common/compat/compat_posix_string.c \
-    libretro-common/string/stdstring.c
+    libretro-common/string/stdstring.c \
+    libretro-common/queues/fifo_queue.c \
+    libretro-common/features/features_cpu.c \
+    libretro-common/encodings/encoding_utf.c \
+    libretro-common/vfs/vfs_implementation.c
 
 # Object files
-OBJECTS := $(SOURCES:.cpp=.o) $(LIBRETRO_COMMON_SOURCES_C:.c=.o)
+OBJECTS := $(SOURCES:.cpp=.o)
+OBJECTS := $(OBJECTS:.mm=.o)
+OBJECTS += $(LIBRETRO_COMMON_SOURCES_C:.c=.o)
 
 # Build rules
 .PHONY: all clean help
@@ -113,6 +122,10 @@ $(TARGET): $(OBJECTS)
 
 # Compile C++ sources
 %.o: %.cpp
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+
+# Compile Objective-C++ sources
+%.o: %.mm
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
 # Compile C sources
