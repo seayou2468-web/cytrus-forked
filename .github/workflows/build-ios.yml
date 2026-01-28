@@ -23,7 +23,7 @@ jobs:
       run: xcodebuild -version
 
     - name: Show iOS SDK version
-      run: xcodebuild -showsdks | grep iPhoneos
+      run: xcodebuild -showsdks | grep iPhoneOS
 
     - name: Build core using individual core method
       run: |
