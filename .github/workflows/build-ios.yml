@@ -22,7 +22,7 @@ jobs:
     - name: Install dependencies
       run: |
         # Install host tools via Homebrew
-        brew install cmake
+        brew install cmake boost fmt nlohmann-json zstd openssl
 
         # Install retroarch-apple-deps for iOS target dependencies
         git clone https://github.com/warmenhoven/retroarch-apple-deps.git retroarch-apple-deps
@@ -30,6 +30,8 @@ jobs:
 
     - name: Build core
       run: |
+        # Set environment variables for the build
+        export IPHONEOS_DEPLOYMENT_TARGET=13.0
         make -f Makefile.libretro platform=ios-arm64 -j$(sysctl -n hw.ncpu)
 
     - name: Upload artifacts

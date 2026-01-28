@@ -1,0 +1,219 @@
+name: Build iOS libretro Core (Makefile Method)
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'Core/**'
+      - 'cytrus_*.cpp'
+      - 'cytrus_*.h'
+      - 'Makefile'
+      - '.github/workflows/build-ios-makefile.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'Core/**'
+      - 'cytrus_*.cpp'
+      - 'cytrus_*.h'
+      - 'Makefile'
+      - '.github/workflows/build-ios-makefile.yml'
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+
+    strategy:
+      matrix:
+        arch:
+          - arm64
+          - x86_64
+        ios_min:
+          - "13.0"
+          - "14.0"
+        exclude:
+          # Exclude x86_64 for newer iOS versions (less common)
+          - arch: x86_64
+            ios_min: "14.0"
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: '26.1'
+
+    - name: Show build environment
+      run: |
+        echo "=== Xcode Version ==="
+        xcodebuild -version
+        echo ""
+        echo "=== iOS SDKs ==="
+        xcodebuild -showsdks | grep ios
+        echo ""
+        echo "=== Build Configuration ==="
+        echo "Architecture: ${{ matrix.arch }}"
+        echo "iOS Minimum: ${{ matrix.ios_min }}"
+        echo "CPU Cores: $(sysctl -n hw.ncpu)"
+        echo "Memory: $(sysctl -n hw.memsize | awk '{printf "%.0f GB", $1/1024/1024/1024}')"
+
+    - name: Cache build artifacts
+      uses: actions/cache@v3
+      with:
+        path: |
+          *.o
+          *.dylib
+          build/
+        key: ios-${{ matrix.arch }}-${{ matrix.ios_min }}-${{ github.sha }}
+        restore-keys: |
+          ios-${{ matrix.arch }}-${{ matrix.ios_min }}-
+
+    - name: Create libretro build environment
+      run: |
+        # Create directories similar to libretro-super
+        mkdir -p dist/ios-arm64
+        mkdir -p dist/ios-universal
+
+        # Set environment variables
+        echo "DIST_DIR=dist/ios-arm64" >> $GITHUB_ENV
+        echo "CORE_NAME=cytrus" >> $GITHUB_ENV
+
+    - name: Build for ${{ matrix.arch }} (iOS ${{ matrix.ios_min }})
+      run: |
+        # Set build flags for iOS
+        export CFLAGS="-arch ${{ matrix.arch }} -mios-version-min=${{ matrix.ios_min }} -O3 -fPIC -Ilibretro-common/include"
+        export CXXFLAGS="-arch ${{ matrix.arch }} -mios-version-min=${{ matrix.ios_min }} -O3 -fPIC -std=c++17 -Ilibretro-common/include"
+        export LDFLAGS="-arch ${{ matrix.arch }} -mios-version-min=${{ matrix.ios_min }} -shared"
+        export CC=clang
+        export CXX=clang++
+        export PLATFORM=ios
+        export ARCH=${{ matrix.arch }}
+
+        echo "=== Building with flags ==="
+        echo "CFLAGS: $CFLAGS"
+        echo "CXXFLAGS: $CXXFLAGS"
+        echo "LDFLAGS: $LDFLAGS"
+        echo ""
+
+        # Clean previous build
+        make clean || true
+
+        # Build the core
+        echo "=== Building ${{ env.CORE_NAME }} for ${{ matrix.arch }} ==="
+        make -j$(sysctl -n hw.ncpu) VERBOSE=1
+
+        # Check if build succeeded
+        if [ -f "${{ env.CORE_NAME }}_libretro.dylib" ]; then
+          echo "✅ Build successful!"
+
+          # Show library info
+          echo "=== Library Information ==="
+          file "${{ env.CORE_NAME }}_libretro.dylib"
+          echo ""
+          echo "=== Library Dependencies ==="
+          otool -L "${{ env.CORE_NAME }}_libretro.dylib"
+          echo ""
+
+          # Copy to dist directory
+          cp "${{ env.CORE_NAME }}_libretro.dylib" "${{ env.DIST_DIR }}/${{ env.CORE_NAME }}_libretro_${{ matrix.arch }}.dylib"
+        else
+          echo "❌ Build failed!"
+          echo "=== Available files ==="
+          ls -la *.dylib 2>/dev/null || echo "No .dylib files found"
+          echo ""
+          echo "=== Build log ==="
+          make VERBOSE=1 || true
+          exit 1
+        fi
+
+    - name: Create universal binary (if arm64)
+      if: matrix.arch == 'arm64'
+      run: |
+        # Create universal binary by combining arm64 and x86_64 if both exist
+        ARM64_LIB="${{ env.DIST_DIR }}/${{ env.CORE_NAME }}_libretro_arm64.dylib"
+        X86_64_LIB="${{ env.DIST_DIR }}/${{ env.CORE_NAME }}_libretro_x86_64.dylib"
+        UNIVERSAL_LIB="${{ env.DIST_DIR }}/${{ env.CORE_NAME }}_libretro.dylib"
+
+        if [ -f "$ARM64_LIB" ] && [ -f "$X86_64_LIB" ]; then
+          echo "=== Creating universal binary ==="
+          lipo -create "$ARM64_LIB" "$X86_64_LIB" -output "$UNIVERSAL_LIB"
+
+          echo "=== Universal binary info ==="
+          file "$UNIVERSAL_LIB"
+          lipo -info "$UNIVERSAL_LIB"
+
+          # Copy to universal directory
+          cp "$UNIVERSAL_LIB" "dist/ios-universal/${{ env.CORE_NAME }}_libretro.dylib"
+        else
+          echo "=== Using arm64-only binary ==="
+          cp "$ARM64_LIB" "${{ env.DIST_DIR }}/${{ env.CORE_NAME }}_libretro.dylib"
+        fi
+
+    - name: Create core info file
+      run: |
+        cat > "${{ env.DIST_DIR }}/${{ env.CORE_NAME }}_libretro.info" << 'EOF'
+        display_name = "Cytrus (Nintendo 3DS)"
+        corename = "Cytrus"
+        author = "Citra Team / RetroArch Port"
+        supported_extensions = "3ds|3dsx|cia|elf"
+        coreversion = "1.0.0"
+        manufacturer = "Nintendo"
+        categories = "Emulator"
+        systemname = "Nintendo 3DS"
+        systemid = "nintendo_3ds"
+        database = "Nintendo - Nintendo 3DS"
+        license = "GPLv2"
+        permissions = ""
+        notes = "Nintendo 3DS emulator based on Citra. Requires system files and firmware for full functionality."
+        EOF
+
+    - name: Upload architecture-specific artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: cytrus-ios-${{ matrix.arch }}-${{ matrix.ios_min }}
+        path: |
+          ${{ env.DIST_DIR }}/*.dylib
+          ${{ env.DIST_DIR }}/*.info
+        retention-days: 30
+
+    - name: Upload universal binary (if created)
+      if: matrix.arch == 'arm64' && hashFiles('dist/ios-universal/*.dylib') != ''
+      uses: actions/upload-artifact@v3
+      with:
+        name: cytrus-ios-universal
+        path: |
+          dist/ios-universal/*.dylib
+          ${{ env.DIST_DIR }}/*.info
+        retention-days: 30
+
+    - name: Generate build summary
+      run: |
+        echo "# iOS Build Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Architecture: ${{ matrix.arch }}" >> $GITHUB_STEP_SUMMARY
+        echo "## iOS Minimum: ${{ matrix.ios_min }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        if [ -f "${{ env.DIST_DIR }}/${{ env.CORE_NAME }}_libretro.dylib" ]; then
+          echo "✅ Build successful!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Files created:" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ env.CORE_NAME }}_libretro.dylib\` - Main core library" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ env.CORE_NAME }}_libretro.info\` - Core information file" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Library information:" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          file "${{ env.DIST_DIR }}/${{ env.CORE_NAME }}_libretro.dylib" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Size:" >> $GITHUB_STEP_SUMMARY
+          echo "$(du -h "${{ env.DIST_DIR }}/${{ env.CORE_NAME }}_libretro.dylib" | cut -f1)" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ Build failed!" >> $GITHUB_STEP_SUMMARY
+          exit 1
+        fi
