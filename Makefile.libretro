@@ -96,6 +96,9 @@ INCFLAGS += -I$(CURDIR)/Core/Core
 # Include directories
 INCLUDES := -I. \
            -I$(CURDIR) \
+           -I$(CURDIR)/Core/Core \
+           -I$(CURDIR)/libretro-common/include \
+           -I$(CURDIR) \
            -I$(CURDIR)/Core \
            -I$(CURDIR)/libretro-common/include \
            -ICore \
